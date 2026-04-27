@@ -253,7 +253,8 @@ func (p *Parser) parseCreateUser() (Stmt, error) {
 	p.advance() // USER
 	username := p.advance().Literal
 	password := ""
-	if p.cur().Type == TOKEN_IDENTIFIER && strings.ToUpper(p.cur().Literal) == "PASSWORD" {
+	if p.cur().Type == TOKEN_PASSWORD ||
+		(p.cur().Type == TOKEN_IDENTIFIER && strings.ToUpper(p.cur().Literal) == "PASSWORD") {
 		p.advance()
 		password = p.advance().Literal
 	}
@@ -546,9 +547,10 @@ func (p *Parser) parseRestore() (Stmt, error) {
 		p.advance()
 	}
 	dbName := p.advance().Literal
-	if _, err := p.expect(TOKEN_TO); err != nil {
-		return nil, err // or FROM
+	if p.cur().Type != TOKEN_FROM && p.cur().Type != TOKEN_TO {
+		return nil, fmt.Errorf("expected FROM or TO after database name in RESTORE, got %s", p.cur().Literal)
 	}
+	p.advance() // FROM or TO
 	path := p.advance().Literal
 	return &RestoreStmt{DBName: dbName, Path: path}, nil
 }
